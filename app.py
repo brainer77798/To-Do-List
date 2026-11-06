@@ -29,6 +29,8 @@ from taskvault.ui.views.archive_trash_view import render_archive_trash_view
 from taskvault.ui.views.focus_view import render_focus_view
 from taskvault.ui.views.insights_view import render_insights_view
 from taskvault.ui.views.settings_view import render_settings_view
+from taskvault.ui.views.tags_view import render_tags_view
+from taskvault.ui.views.recurrence_view import render_recurrence_view
 
 
 def main() -> None:
@@ -111,6 +113,10 @@ def main() -> None:
         render_focus_view(sec_status)
     elif active_page == "insights":
         render_insights_view(sec_status)
+    elif active_page == "tags":
+        render_tags_view(sec_status)
+    elif active_page == "recurrence":
+        render_recurrence_view(sec_status)
     elif active_page == "settings":
         render_settings_view(sec_status)
     else:

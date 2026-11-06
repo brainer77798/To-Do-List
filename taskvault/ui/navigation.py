@@ -19,6 +19,8 @@ NAV_ITEMS = [
     ("board", "📌 Board"),
     ("calendar", "🗓️ Calendar"),
     ("projects", "📁 Projects"),
+    ("recurrence", "🔄 Recurring"),
+    ("tags", "🏷️ Tags & Labels"),
     ("completed", "✅ Completed"),
     ("archive_trash", "📦 Archive & Trash"),
     ("focus", "⏱️ Focus Mode"),
