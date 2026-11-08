@@ -90,20 +90,27 @@ def render_task_card(
         # Column 3: Priority & Due Date
         with cols[2]:
             p_color = PRIORITY_COLORS.get(task.priority, "#3B82F6")
-            p_text = task.priority.capitalize()
+            p_text = task.priority.upper()
 
             due_text = format_relative_due(task.due_at, timezone_name, task.due_date_only)
             due_color = "#94A3B8"
+            due_badge_bg = "rgba(100, 116, 139, 0.15)"
             if is_overdue(task.due_at, timezone_name, task.due_date_only) and task.status != "done":
                 due_color = "#EF4444"
+                due_badge_bg = "rgba(239, 68, 68, 0.18)"
             elif is_due_today(task.due_at, timezone_name) and task.status != "done":
                 due_color = "#F59E0B"
+                due_badge_bg = "rgba(245, 158, 11, 0.18)"
 
             st.markdown(
                 f"""
-                <div style='font-size: 0.8rem; line-height: 1.3;'>
-                    <div><span style='color: {p_color}; font-weight: 600;'>●</span> {p_text}</div>
-                    <div style='color: {due_color}; font-weight: 500;'>📅 {due_text}</div>
+                <div style='display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem;'>
+                    <div>
+                        <span style='background: {p_color}22; color: {p_color}; border: 1px solid {p_color}55; padding: 2px 7px; border-radius: 9999px; font-weight: 700; letter-spacing: 0.04em;'>● {p_text}</span>
+                    </div>
+                    <div>
+                        <span style='background: {due_badge_bg}; color: {due_color}; padding: 2px 7px; border-radius: 6px; font-weight: 600;'>📅 {due_text}</span>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
