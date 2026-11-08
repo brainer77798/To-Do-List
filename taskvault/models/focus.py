@@ -38,6 +38,7 @@ class FocusSession(Base):
     __table_args__ = (
         Index("idx_focus_task_id", "task_id"),
         Index("idx_focus_started_at", "started_at"),
+        {"extend_existing": True},
     )
 
 
@@ -58,5 +59,6 @@ class ActivityLog(Base):
     __table_args__ = (
         Index("idx_activity_created_at", "created_at"),
         Index("idx_activity_action", "action"),
+        {"extend_existing": True},
     )
 

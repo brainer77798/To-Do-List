@@ -47,6 +47,7 @@ class User(Base):
     __table_args__ = (
         Index("idx_users_username", "username"),
         Index("idx_users_email", "email"),
+        {"extend_existing": True},
     )
 
 
@@ -71,6 +72,8 @@ class AppSetting(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
 
+    __table_args__ = {"extend_existing": True}
+
 
 class LoginAttempt(Base):
     """
@@ -89,5 +92,6 @@ class LoginAttempt(Base):
         Index("idx_login_attempt_time", "attempted_at"),
         Index("idx_login_attempt_blocked", "blocked_until"),
         Index("idx_login_attempt_identifier", "identifier"),
+        {"extend_existing": True},
     )
 

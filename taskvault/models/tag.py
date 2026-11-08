@@ -32,6 +32,8 @@ class Tag(Base):
     # Relationships
     tasks = relationship("Task", secondary="task_tags", back_populates="tags")
 
+    __table_args__ = {"extend_existing": True}
+
 
 class TaskTag(Base):
     """
@@ -45,5 +47,6 @@ class TaskTag(Base):
     __table_args__ = (
         Index("idx_task_tags_task", "task_id"),
         Index("idx_task_tags_tag", "tag_id"),
+        {"extend_existing": True},
     )
 

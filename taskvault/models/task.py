@@ -75,6 +75,7 @@ class Task(Base):
         Index("idx_tasks_is_archived", "is_archived"),
         Index("idx_tasks_planned_date", "planned_for_date"),
         Index("idx_tasks_recurrence_occ", "recurrence_series_id", "occurrence_key"),
+        {"extend_existing": True},
     )
 
 
@@ -96,6 +97,7 @@ class ChecklistItem(Base):
 
     __table_args__ = (
         Index("idx_checklist_task_id", "task_id"),
+        {"extend_existing": True},
     )
 
 
@@ -133,4 +135,5 @@ class RecurrenceSeries(Base):
     __table_args__ = (
         Index("idx_recurrence_next_at", "next_occurrence_at"),
         Index("idx_recurrence_paused", "is_paused"),
+        {"extend_existing": True},
     )

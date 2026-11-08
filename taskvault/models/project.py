@@ -39,5 +39,6 @@ class Project(Base):
     __table_args__ = (
         Index("idx_projects_status", "status"),
         Index("idx_projects_name", "name"),
+        {"extend_existing": True},
     )
 
