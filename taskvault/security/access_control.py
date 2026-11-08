@@ -16,12 +16,16 @@ class UnauthorizedAccessError(Exception):
 
 class SessionManager:
     """
-    Manages session-level unlock state, last activity tracking, and inactivity lockouts.
+    Manages session-level unlock state, last activity tracking, and user session context.
     Works seamlessly with Streamlit's session state.
     """
     KEY_IS_UNLOCKED = "_tv_unlocked"
     KEY_LAST_ACTIVITY = "_tv_last_activity"
     KEY_SESSION_ID = "_tv_session_id"
+    KEY_USER_ID = "_tv_user_id"
+    KEY_USERNAME = "_tv_username"
+    KEY_EMAIL = "_tv_email"
+    KEY_FULL_NAME = "_tv_full_name"
 
     @classmethod
     def get_session_state(cls) -> dict:
@@ -67,13 +71,47 @@ class SessionManager:
         state[cls.KEY_LAST_ACTIVITY] = time.time()
 
     @classmethod
-    def unlock(cls) -> None:
+    def unlock(
+        cls,
+        user_id: str | None = None,
+        username: str | None = None,
+        email: str | None = None,
+        full_name: str | None = None,
+    ) -> None:
         """
-        Marks the current session as authenticated.
+        Marks the current session as authenticated and stores active user context.
         """
         state = cls.get_session_state()
         state[cls.KEY_IS_UNLOCKED] = True
         state[cls.KEY_LAST_ACTIVITY] = time.time()
+        if user_id is not None:
+            state[cls.KEY_USER_ID] = str(user_id)
+        if username is not None:
+            state[cls.KEY_USERNAME] = str(username)
+        if email is not None:
+            state[cls.KEY_EMAIL] = str(email)
+        if full_name is not None:
+            state[cls.KEY_FULL_NAME] = str(full_name)
+
+    @classmethod
+    def get_current_user_id(cls) -> str | None:
+        """Returns the ID of the authenticated user in the current session."""
+        return cls.get_session_state().get(cls.KEY_USER_ID)
+
+    @classmethod
+    def get_current_username(cls) -> str | None:
+        """Returns the username of the authenticated user."""
+        return cls.get_session_state().get(cls.KEY_USERNAME)
+
+    @classmethod
+    def get_current_email(cls) -> str | None:
+        """Returns the email of the authenticated user."""
+        return cls.get_session_state().get(cls.KEY_EMAIL)
+
+    @classmethod
+    def get_current_full_name(cls) -> str | None:
+        """Returns the full name of the authenticated user."""
+        return cls.get_session_state().get(cls.KEY_FULL_NAME)
 
     @classmethod
     def lock(cls) -> None:
@@ -83,6 +121,10 @@ class SessionManager:
         state = cls.get_session_state()
         state[cls.KEY_IS_UNLOCKED] = False
         state[cls.KEY_LAST_ACTIVITY] = None
+        state[cls.KEY_USER_ID] = None
+        state[cls.KEY_USERNAME] = None
+        state[cls.KEY_EMAIL] = None
+        state[cls.KEY_FULL_NAME] = None
         # Purge any cached form data or sensitive keys
         keys_to_clear = [k for k in state.keys() if k.startswith("tv_private_")]
         for k in keys_to_clear:

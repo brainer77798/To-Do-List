@@ -6,7 +6,7 @@ Enforces Section 3.4 failed-attempt protection.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, or_, func
 from sqlalchemy.orm import Session
 
 from taskvault.models.security import LoginAttempt
@@ -27,25 +27,45 @@ class RateLimitExceededError(Exception):
         super().__init__("Unable to unlock. Check your password or try again later.")
 
 
-def check_rate_limit(db: Session, source_fingerprint: str | None = None) -> None:
+def check_rate_limit(
+    db: Session,
+    source_fingerprint: str | None = None,
+    identifier: str | None = None,
+) -> None:
     """
     Checks if login attempts are currently blocked.
     Raises RateLimitExceededError if currently in lockout.
     """
     now = utc_now()
 
-    # Check if there is an active lockout
-    query = (
-        select(LoginAttempt.blocked_until)
-        .where(
-            and_(
-                LoginAttempt.blocked_until.is_not(None),
-                LoginAttempt.blocked_until > now,
+    # Check if there is an active lockout globally or for this identifier
+    conditions = [
+        LoginAttempt.blocked_until.is_not(None),
+        LoginAttempt.blocked_until > now,
+    ]
+    if identifier:
+        clean_id = identifier.strip().lower()
+        query = (
+            select(LoginAttempt.blocked_until)
+            .where(
+                and_(
+                    *conditions,
+                    or_(
+                        LoginAttempt.identifier == clean_id,
+                        LoginAttempt.identifier.is_(None),
+                    ),
+                )
             )
+            .order_by(LoginAttempt.blocked_until.desc())
+            .limit(1)
         )
-        .order_by(LoginAttempt.blocked_until.desc())
-        .limit(1)
-    )
+    else:
+        query = (
+            select(LoginAttempt.blocked_until)
+            .where(and_(*conditions))
+            .order_by(LoginAttempt.blocked_until.desc())
+            .limit(1)
+        )
     active_block = db.execute(query).scalar_one_or_none()
     if active_block:
         if active_block.tzinfo is None:
@@ -58,12 +78,14 @@ def record_login_attempt(
     db: Session,
     succeeded: bool,
     source_fingerprint: str | None = None,
+    identifier: str | None = None,
 ) -> None:
     """
     Records an authentication attempt. If failed, checks rolling threshold and sets blocked_until.
     If succeeded, clears old failed attempts.
     """
     now = utc_now()
+    clean_id = identifier.strip().lower() if identifier else None
 
     if succeeded:
         # Record success
@@ -71,6 +93,7 @@ def record_login_attempt(
             attempted_at=now,
             succeeded=True,
             source_fingerprint=source_fingerprint,
+            identifier=clean_id,
         ))
         # Cleanup older failed attempts after successful unlock
         cutoff = now - timedelta(hours=24)
@@ -82,14 +105,21 @@ def record_login_attempt(
     window_start = now - timedelta(minutes=LOCKOUT_WINDOW_MINUTES)
 
     # Count recent failures in the rolling window
-    fail_count = db.execute(
-        select(func.count(LoginAttempt.id)).where(
-            and_(
-                LoginAttempt.succeeded.is_(False),
-                LoginAttempt.attempted_at >= window_start,
+    fail_query = select(func.count(LoginAttempt.id)).where(
+        and_(
+            LoginAttempt.succeeded.is_(False),
+            LoginAttempt.attempted_at >= window_start,
+        )
+    )
+    if clean_id:
+        fail_query = fail_query.where(
+            or_(
+                LoginAttempt.identifier == clean_id,
+                LoginAttempt.identifier.is_(None),
             )
         )
-    ).scalar_one() + 1  # Including this attempt
+
+    fail_count = db.execute(fail_query).scalar_one() + 1  # Including this attempt
 
     blocked_until: datetime | None = None
     if fail_count >= MAX_FAILED_ATTEMPTS:
@@ -113,6 +143,7 @@ def record_login_attempt(
         attempted_at=now,
         succeeded=False,
         source_fingerprint=source_fingerprint,
+        identifier=clean_id,
         blocked_until=blocked_until,
     )
     db.add(attempt)

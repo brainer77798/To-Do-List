@@ -61,11 +61,29 @@ def render_sidebar(settings: dict) -> str:
 
         st.markdown("---")
 
-        # Sidebar footer with Manual Lock Now
-        st.caption("Active Session")
-        if st.button("🔒 Lock Workspace", key="sidebar_lock_btn", use_container_width=True):
-            auth_service.lock_workspace()
-            st.rerun()
+        # Sidebar footer with Active User & Session Controls
+        username = settings.get("username") or "user"
+        email = settings.get("email") or ""
+        st.markdown(
+            f"""
+            <div style="padding: 0.25rem 0 0.5rem 0;">
+                <div style="font-size: 0.85rem; font-weight: 600; color: #F1F5F9;">👤 {username}</div>
+                {"<div style='font-size: 0.75rem; color: #94A3B8; overflow: hidden; text-overflow: ellipsis;'>" + email + "</div>" if email else ""}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        foot_cols = st.columns(2)
+        with foot_cols[0]:
+            if st.button("🔒 Lock", key="sidebar_lock_btn", use_container_width=True, help="Lock workspace session"):
+                auth_service.lock_workspace()
+                st.rerun()
+        with foot_cols[1]:
+            if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True, help="Log out of account"):
+                auth_service.lock_workspace()
+                st.session_state.clear()
+                st.rerun()
 
     return st.session_state.current_nav_page
 
