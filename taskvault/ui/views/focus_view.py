@@ -248,7 +248,7 @@ def get_pomodoro_html_widget(theme: str = "dark") -> str:
                 </div>
             </div>
         </div>
-
+    """ + """
         <script>
             const FULL_DASH_ARRAY = 628; // 2 * PI * 100
             let currentMode = 'focus';
