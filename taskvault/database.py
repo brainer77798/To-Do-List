@@ -102,10 +102,33 @@ def get_db_session(config: AppConfig | None = None) -> Generator[Session, None, 
 
 def init_db(engine: Engine | None = None) -> None:
     """
-    Creates all registered schema tables if they do not exist.
+    Creates all registered schema tables if they do not exist,
+    and applies safe additive migrations for existing databases.
     """
     eng = engine or get_engine()
     # Import all models to ensure they are registered with Base.metadata
     from taskvault import models  # noqa: F401
+    from sqlalchemy import text, inspect
+
     Base.metadata.create_all(bind=eng)
+
+    # Safe additive column migration for existing SQLite databases
+    with eng.connect() as conn:
+        try:
+            inspector = inspect(eng)
+            if "app_settings" in inspector.get_table_names():
+                existing_cols = {c["name"] for c in inspector.get_columns("app_settings")}
+                if "daily_goal" not in existing_cols:
+                    conn.execute(text("ALTER TABLE app_settings ADD COLUMN daily_goal INTEGER DEFAULT 5 NOT NULL"))
+                if "weekly_goal" not in existing_cols:
+                    conn.execute(text("ALTER TABLE app_settings ADD COLUMN weekly_goal INTEGER DEFAULT 25 NOT NULL"))
+
+            if "login_attempts" in inspector.get_table_names():
+                existing_cols = {c["name"] for c in inspector.get_columns("login_attempts")}
+                if "identifier" not in existing_cols:
+                    conn.execute(text("ALTER TABLE login_attempts ADD COLUMN identifier VARCHAR(128)"))
+
+            conn.commit()
+        except Exception as mig_err:
+            logger.warning(f"Auto-migration notice: {mig_err}")
 
